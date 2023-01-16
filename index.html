@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sqlite3 Gyakorlatban</title>
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <style>
+button:hover{
+        transform: scale(1.2);
+        cursor: pointer;
+        filter: invert(100%);
+        }
+    </style>
+</head>
+<body style="background-color:darkslategray;color:goldenrod;">
+    <input id="keres" type="textbox" style="background-color:dimgrey; color:goldenrod" placeholder="Írj ide...">
+    <button id="keres2" style="background-color: black; transition: transform  0.5s; " pys-onClick="solve">Keres</button>
+    <br>
+    <br>
+   <p style="color: red;"><b>Üzenet:<b></p> <div id="msg">Üzenetek itt jelennek meg!  ༼ つ ◕_◕ ༽つ</div><br>
+   <p style="color: red;"><b>Név:<b></p> <div id="kimenet"></div><br>
+   <p style="color: red;"><b>Rendszám:<b></p> <div id="kimenet2"></div><br>
+   <p style="color: red;"><b>vegyjel:<b></p> <div id="kimenet3"></div><br>
+   <p style="color: red;"><b>Relatív atomtömeg:<b></p> <div id="kimenet4"></div><br>
+   <p style="color: red;"><b>Felfedező:<b></p> <div id="kimenet5"></div><br>
+   <p style="color: red;"><b>Felfedezés éve:<b></p> <div id="kimenet6"></div><br>
+   <p style="color: red;"><b>Elektronnegativitás:<b></p> <div id="kimenet7"></div><br>
+    <template id="list-template">
+        <section class="data" style="border-width: 3px; border-color: black;">
+            <h3></h3>
+            <a></a>
+        </section>
+    </template>
+    <py-script>
+import sqlite3
+from pyodide.http import open_url
+conn = sqlite3.connect(':memory:')
+cur = conn.cursor()
+jo = False
+cur.execute(" DROP TABLE IF EXISTS tb ")
+cur.execute("""
+CREATE TABLE IF NOT EXISTS tb
+(ev        INTEGER,
+elem       TEXT,
+vegyjel    TEXT,
+rendszam   TEXT,
+felfedezo TEXT,
+atomtomeg TEXT,
+negativitas TEXT)
+""")
+#Év;Elem;Vegyjel;Rendszám;Felfedező;Atomtomeg;Negativitas
+conn.commit()
+with open_url("https://raw.githubusercontent.com/loczylevi/Kemiai_Elemek/main/tablazat.txt") as f:
+        f.readline()
+        for sor in f:
+            ev, elem, vegyjel, rendszam, felfedezo, atomtomeg, negativitas  = sor.strip().split(';')
+            #print(sor)
+            cur.execute(" INSERT INTO tb VALUES (?,?,?,?,?,?,?) ", ( ev, elem, vegyjel, rendszam, felfedezo, atomtomeg, negativitas))
+conn.commit()
+
+#változok megadása
+bekeres = Element("keres")
+message = Element("msg")
+kimenet = Element("kimenet")
+kimenet2 = Element("kimenet2")
+kimenet3 = Element("kimenet3")
+kimenet4 = Element("kimenet4")
+kimenet5 = Element("kimenet5")
+kimenet6 = Element("kimenet6")
+kimenet7 = Element("kimenet7")
+kimenet8 = Element("kimenet8")
+
+msg = cur.execute("SELECT ev FROM tb WHERE ev = 1953")
+#print(msg.fetchall())
+kimenet.write(msg)
+#vegyjel = "Ag"
+#kereso = cur.execute(" SELECT * FROM  tb WHERE vegyjel =? ",(vegyjel,))
+#print(kereso.fetchall())
+
+def solve(*args, **kwargs): 
+        vegyjel = str(bekeres.value)
+        vegyjel = vegyjel.lower()
+        vegyjel = vegyjel.capitalize()
+        #kimenet.write(vegyjel)
+        kereso = cur.execute(" SELECT * FROM  tb WHERE vegyjel =? OR ev =? OR elem =? OR rendszam =? OR felfedezo =? OR atomtomeg =? OR negativitas =?",(vegyjel,vegyjel,vegyjel,vegyjel,vegyjel,vegyjel,vegyjel))
+        #print(kereso)
+        lista1 = []
+        for sor in kereso:
+            lista1.append(sor)
+
+        
+
+        if len(lista1) > 0:
+            jo = True
+            kimenet.write(lista1[0][1])
+            kimenet2.write(lista1[0][3]) 
+            kimenet3.write(lista1[0][2])
+            kimenet4.write(lista1[0][5])
+            kimenet5.write(lista1[0][4])
+            kimenet6.write(lista1[0][0])
+            kimenet7.write(lista1[0][6])
+            message.write("Feldolgozás kész! °˖✧◝(⁰▿⁰)◜✧˖°")
+            
+
+        if len(lista1) == 0:
+            if vegyjel.isalpha():
+                message.write("HIBA: Ismeretlen szöveges érték! (⇀‸↼‶)")
+            elif vegyjel.isalpha() == False:
+                message.write(f"Ismeretlen szám érték! (⇀‸↼‶)")
+      
+        
+        if vegyjel == "":
+                message.write("A semmit nem tudom meg keresni!  (--_--)")
+                kimenet.write("")
+                kimenet2.write("") 
+                kimenet3.write("")
+                kimenet4.write("")
+                kimenet5.write("")
+                kimenet6.write("")
+                kimenet7.write("")
+
+        if len(lista1) == 0:
+            felfedezo = cur.execute(f" SELECT * FROM tb WHERE felfedezo LIKE '%{vegyjel}%'")
+            lista2 = []
+            for sor in felfedezo:
+                lista2.append(sor)
+
+            jo = True
+            kimenet.write(lista2[0][1])
+            kimenet2.write(lista2[0][3]) 
+            kimenet3.write(lista2[0][2])
+            kimenet4.write(lista2[0][5])
+            kimenet5.write(lista2[0][4])
+            kimenet6.write(lista2[0][0])
+            kimenet7.write(lista2[0][6])
+            message.write("Feldolgozás kész! °˖✧◝(⁰▿⁰)◜✧˖°")
+    
+    
+    
+   </py-script>
+</body>
+</html>
